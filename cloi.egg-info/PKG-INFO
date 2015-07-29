@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: cloi
+Version: 0.0.4
+Summary: A connector to implement connecting to CLOI-based instruments
+Home-page: https://github.com/xtralien/pycloi.git
+Author: Xtralien
+Author-email: jack@xtralien.com
+License: GPLv3
+Description: UNKNOWN
+Platform: UNKNOWN
