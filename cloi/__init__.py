@@ -3,10 +3,19 @@
 
 # Create a basic logger to make logging easier
 import logging
+import os
+from distutils.version import LooseVersion
+
+loglevels = {
+    'debug': logging.DEBUG,
+    'info' : logging.INFO,
+    'warn' : logging.WARNING,
+    'error': logging.ERROR
+}
 
 logging.basicConfig()
 logger = logging.getLogger('CLOI')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(loglevels.get(os.getenv('LOG', 'warn').lower(), logging.WARNING))
 
 import sys
 
@@ -48,16 +57,16 @@ class CLOI:
         self.devices = []
         self.scan_timeout = scan_timeout
 
-    def scan(self, usb=True, network=True):
+    def scan(self, usb=True, network=False):
         if usb:
             for port in sutils.serial_ports():
                 logger.debug("Attempting to connect to %s" % port)
                 try:
                     s = serial.Serial(port)
                     try:
-                        s.write(b"hello cloi\n")
+                        s.write(b"cloi hello\n")
                         data = s.read(576).decode('utf-8').strip().lower()
-                        if data == "hello cloi":
+                        if data == "hello world":
                             d = Device()
                             self.devices.append(d)
 
@@ -75,18 +84,21 @@ class CLOI:
                     for addr in addrs[netifaces.AF_INET]:
                         if addr.get('broadcast', None):
                             for ip in nutils.generate_ip_list(addr):
-                                if True: #try:
+                                try:
 
                                     s = socket.socket()
                                     s.settimeout(self.scan_timeout)
-                                    s.connect_ex((ip, 8888))
+                                    s.connect((ip, 8888))
                                     try:
-                                        s.send(b"hello cloi\n")
-                                        data = s.recv(576).decode('utf-8').strip().lower()
-                                        if data == "hello world":
+                                        logger.debug("Testing " + ip)
+                                        s.send(b"cloi hello\n")
+                                        data = s.recv(576)
+
+                                        if data == b"Hello World\n":
                                             logger.info("Found %s" % ip)
                                             d = Device()
                                             d.add_connection(SocketConnection(ip,8888))
+                                            d.discover_devices()
                                             self.devices.append(d)
                                     except socket.timeout:
                                         continue
@@ -94,7 +106,7 @@ class CLOI:
                                         continue
                                     finally:
                                         s.close()
-                                else:
+                                except socket.error:
                                     pass
 
                 except KeyError:
@@ -111,6 +123,9 @@ class Device(object):
     def __init__(self):
         self.connections = []
         self.instruments = {}
+
+    def scan(self):
+        pass
 
     def add_connection(self, connection):
         self.connections.append(connection)
@@ -129,7 +144,11 @@ class Device(object):
         logger.error("Can't send command '{cmd} because there are no open connections'".format(cmd=command))
 
 
+    def discover_devices(self):
+        version = self.command("cloi version", True)
 
+        if LooseVersion(version) >= LooseVersion("0.2.0"):
+            logger.info("Can match against versions")
 
     def __repr__(self):
         return "<Device connection={connection}/>".format(connection=self.connections[0])

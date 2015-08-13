@@ -3,10 +3,22 @@
 
 __author__ = 'jack'
 
-import cloi as cloi
+import sys
 
-c = cloi.CLOI(0.02)
-c.scan()
+try:
+    import cloi
+except ImportError:
+    try:
+        import __init__ as cloi
+    except ImportError:
+        cloi = None
+        sys.exit(1)
 
-for device in c.list_devices():
-    print(device)
+if cloi:
+    c = cloi.CLOI(0.05)
+    c.scan(network=True)
+
+    for device in c.list_devices():
+        print(device)
+
+
