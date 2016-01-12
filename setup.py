@@ -2,12 +2,15 @@ from setuptools import setup
 
 setup(
     name='cloi',
-    version='0.1.2',
+    version='0.3.3',
     description='A connector to implement connecting to CLOI-based instruments',
     author='Xtralien',
     author_email='jack@xtralien.com',
     url='https://github.com/xtralien/pycloi.git',
     packages=['cloi'],
-    install_requires=['pyserial', 'netifaces'],
+    extras_require={
+        'Serial': ['pyserial'],
+        'Netscan': ['netifaces']
+    },
     license='GPLv3'
 )

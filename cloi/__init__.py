@@ -5,6 +5,9 @@
 import logging
 import os
 from distutils.version import LooseVersion
+import time
+import re
+import threading
 
 loglevels = {
     'debug': logging.DEBUG,
@@ -16,6 +19,11 @@ loglevels = {
 logging.basicConfig()
 logger = logging.getLogger('CLOI')
 logger.setLevel(loglevels.get(os.getenv('LOG', 'warn').lower(), logging.WARNING))
+
+try:
+    import numpy
+except ImportError:
+    logger.warn("Numpy not found, narray and nmatrix will fail")
 
 import sys
 
@@ -51,6 +59,7 @@ except ImportError:
     import cloi.serial_utils as sutils
     import cloi.network_utils as nutils
 
+registered_devices = {}
 
 class CLOI:
     def __init__(self, scan_timeout=0.03):
@@ -118,11 +127,57 @@ class CLOI:
     def list_devices(self):
         return self.devices
 
+def process_strip(x):
+    return x.strip('\n[];')
+
+def process_array(x):
+    data = [float(y) for y in x.strip('\n[];').split(';')]
+    try:
+        return numpy.array(data)
+    except NameError:
+        return data
+    
+def process_matrix(x):
+    data = [[float(z) for z in y.split(',')] for y in x.strip('\n[];').split(';')]
+    try:
+        return numpy.array(data)
+    except NameError:
+        return data
+    
+re_matrix = re.compile('(\[([0-9\-e.]+,[0-9\-e.]+(;?))+\])')
+re_array = re.compile('(\[([0-9\-e.]+(;?))+\])')
+
+def process_auto(x):
+    if re_matrix.match(x):
+        return process_matrix(x)
+    elif re_array.match(x):
+        return process_array(x)
+    elif '\n' in x:
+        return x.strip('\n;[]').split('\n')
+    else:
+        return x
+
 
 class Device(object):
-    def __init__(self):
+    connections = []
+    current_selection = []
+    formatters = {
+        'strip': process_strip,
+        'array': process_array,
+        'matrix' : process_matrix,
+        'none': lambda x: x,
+        'auto': process_auto
+    }
+    
+    def __init__(self, addr=None, port=None):
         self.connections = []
-        self.instruments = {}
+        self.current_selection = []
+        self.in_progress = False
+        
+        if port:
+            self.add_connection(SocketConnection(addr, port))
+        elif addr:
+            self.add_connection(SerialConnection(addr))
 
     def scan(self):
         pass
@@ -130,14 +185,15 @@ class Device(object):
     def add_connection(self, connection):
         self.connections.append(connection)
 
-    def command(self, command, will_return=False):
+    def command(self, command, returns=False):
+        time.sleep(0.2)
         if self.connections == []:
             logger.error("Can't send command '{cmd} because there are no open connections'".format(cmd=command))
         for conn in self.connections:
             if True:#try:
                 conn.write(command)
-                if will_return:
-                    return conn.read(will_return)
+                if returns:
+                    return conn.read(returns)
                 return
             else:#except Exception:
                 continue
@@ -147,22 +203,53 @@ class Device(object):
     def discover_devices(self):
         version = self.command("cloi version", True)
 
-        if LooseVersion(version) >= LooseVersion("0.2.0"):
+        if LooseVersion(version) >= LooseVersion("0.9.0"):
             logger.info("Can match against versions")
 
-    def __repr__(self):
-        return "<Device connection={connection}/>".format(connection=self.connections[0])
-
-
-class Instrument(object):
-    def __init__(self, iid=None):
-        if iid:
-            self.iid = iid
+    def __getattribute__(self, x):
+        if '__' in x or x in object.__dir__(self):
+            return object.__getattribute__(self, x)
         else:
-            self.iid = 'Unknown'
+            self.current_selection.append(x)
+            return self
+
+    def __call__(self, *args, **kwargs):
+        returns = 'returns' in kwargs.keys() or 'format' in kwargs.keys() or kwargs.get('callback', False)
+        command = ' '.join(self.current_selection + [str(x) for x in args])
+        self.current_selection = []
+        
+        formatter = lambda x: x
+        if 'format' in kwargs.keys() or kwargs.get('callback', None):
+            if not 'format' in kwargs.keys():
+                kwargs['format'] = 'auto'
+            try:
+                formatter = self.formatters[kwargs['format']]
+            except KeyError:
+                if kwargs['format']:
+                    logger.warning('Formatter not found')               
+            
+        callback = kwargs.get('callback', None)
+        
+        if callback:
+            def async_function():
+                while self.in_progress:
+                    continue
+                self.in_progress = True
+                data = formatter(self.command(command, returns=True))
+                self.in_progress = False
+                callback(data)
+            return threading.Thread(target=async_function).start()
+        
+        self.in_progress = True
+        data = formatter(self.command(command, returns=returns))
+        self.in_progress = False
+        return data
 
     def __repr__(self):
-        return "<{name} {iid}/>".format(name=self.__class__.__name__, iid=self.iid)
+        if len(self.connections):
+            return "<Device connection={connection}/>".format(connection=self.connections[0])
+        else:
+            return "<Device connection=None/>"
 
 
 class Connection:
@@ -177,7 +264,7 @@ class Connection:
 
 
 class SocketConnection(Connection):
-    def __init__(self, host, port, timeout=0.03):
+    def __init__(self, host, port, timeout=0.07):
         super(SocketConnection, self).__init__()
         self.host = host
         self.port = port
@@ -217,3 +304,7 @@ class SerialConnection(Connection):
 
     def __repr__(self):
         return "<Serial/USB {connection} />".format(connection=self.port)
+
+
+def register(cls, path):
+    registered_devices[path] = cls

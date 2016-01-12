@@ -16,7 +16,7 @@ except ImportError:
 
 if cloi:
     c = cloi.CLOI(0.05)
-    c.scan(network=False)
+    c.scan(network=True)
 
     for device in c.list_devices():
         print(device)
