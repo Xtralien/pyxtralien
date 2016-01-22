@@ -151,11 +151,11 @@ re_number = re.compile('(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?')
 def process_auto(x=None):
     if x is None:
         return x
-    if re_matrix.match(x):
+    if re_matrix.fullmatch(x):
         return process_matrix(x)
-    elif re_array.match(x):
+    elif re_array.fullmatch(x):
         return process_array(x)
-    elif re_number.match(x):
+    elif re_number.fullmatch(x):
         return float(x)
     elif '\n' in x:
         split_string = x.strip('\n;[]').split('\n') 
