@@ -61,7 +61,7 @@ except ImportError:
 
 registered_devices = {}
 
-class CLOI:
+class CLOI(object):
     def __init__(self, scan_timeout=0.03):
         self.devices = []
         self.scan_timeout = scan_timeout
@@ -146,14 +146,22 @@ def process_matrix(x):
     
 re_matrix = re.compile('(\[([0-9\-e.]+,[0-9\-e.]+(;?))+\])')
 re_array = re.compile('(\[([0-9\-e.]+(;?))+\])')
+re_number = re.compile('(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?')
 
-def process_auto(x):
+def process_auto(x=None):
+    if x is None:
+        return x
     if re_matrix.match(x):
         return process_matrix(x)
     elif re_array.match(x):
         return process_array(x)
+    elif re_number.match(x):
+        return float(x)
     elif '\n' in x:
-        return x.strip('\n;[]').split('\n')
+        split_string = x.strip('\n;[]').split('\n') 
+        if len(split_string) < 2:
+            return split_string[0]
+        return split_string
     else:
         return x
 
@@ -164,7 +172,8 @@ class Device(object):
     formatters = {
         'strip': process_strip,
         'array': process_array,
-        'matrix' : process_matrix,
+        'matrix': process_matrix,
+        'number': lambda x: float(x), 
         'none': lambda x: x,
         'auto': process_auto
     }
@@ -285,7 +294,9 @@ class SocketConnection(Connection):
             try:
                 retval = retval + str(self.socket.recv(576), 'utf-8')
             except socket.timeout:
-                return retval
+                break
+                
+        return retval
 
     def write(self, cmd):
         if type(cmd) == str:
@@ -300,7 +311,25 @@ class SerialConnection(Connection):
     def __init__(self, port):
         super(SerialConnection, self).__init__()
         self.port = port
-        self.connection = serial.Serial(port)
+        self.connection = serial.Serial(port, timeout=0.1)
+        
+    def read(self, wait=True):
+        retval = ""
+        while wait and self.connection.inWaiting() == 0:
+            continue
+        
+        while self.connection.inWaiting():
+            try:
+                retval = retval + str(self.connection.read(436), 'utf-8')
+            except Exception:
+                break
+        
+        return retval
+              
+    def write(self, cmd):
+        if type(cmd) == str:
+            cmd = bytes(cmd, 'utf-8')
+        self.connection.write(cmd)
 
     def __repr__(self):
         return "<Serial/USB {connection} />".format(connection=self.port)
