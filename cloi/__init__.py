@@ -144,9 +144,10 @@ def process_matrix(x):
     except NameError:
         return data
     
-re_matrix = re.compile('(\[([0-9\-e.]+,[0-9\-e.]+(;?))+\])')
-re_array = re.compile('(\[([0-9\-e.]+(;?))+\])')
-re_number = re.compile('(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?')
+number_regex = "(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?"
+re_matrix = re.compile('(\[({number},{number}(;?))+\])\n?'.format(number=number_regex))
+re_array = re.compile('(\[({number}(;?))+\])\n?'.format(number=number_regex))
+re_number = re.compile('{number}\n?'.format(number=number_regex))
 
 def process_auto(x=None):
     if x is None:
@@ -229,10 +230,10 @@ class Device(object):
         
         formatter = lambda x: x
         if 'format' in kwargs.keys() or kwargs.get('callback', None):
-            if not 'format' in kwargs.keys():
+            if not 'format' in kwargs.keys() or kwargs.get('format', ):
                 kwargs['format'] = 'auto'
             try:
-                formatter = self.formatters[kwargs['format']]
+                formatter = self.formatters[kwargs.get('format', 'auto')]
             except KeyError:
                 if kwargs['format']:
                     logger.warning('Formatter not found')               
