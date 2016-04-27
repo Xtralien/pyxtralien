@@ -195,20 +195,25 @@ class Device(object):
     def add_connection(self, connection):
         self.connections.append(connection)
 
-    def command(self, command, returns=False):
-        time.sleep(0.2)
+    def command(self, command, returns=False, sleep_time=0.05):
+        if sleep_time is not None:
+            time.sleep(sleep_time)
         if self.connections == []:
             logger.error("Can't send command '{cmd} because there are no open connections'".format(cmd=command))
         for conn in self.connections:
-            if True:#try:
+            try:
                 conn.write(command)
                 if returns:
                     return conn.read(returns)
                 return
-            else:#except Exception:
+            except Exception:
+                conn.close()
                 continue
         logger.error("Can't send command '{cmd} because there are no open connections'".format(cmd=command))
 
+    def close(self):
+        for conn in self.connections:
+            conn.close()
 
     def discover_devices(self):
         version = self.command("cloi version", True)
@@ -223,7 +228,7 @@ class Device(object):
             self.current_selection.append(x)
             return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, sleep_time=0.05, **kwargs):
         returns = 'returns' in kwargs.keys() or 'format' in kwargs.keys() or kwargs.get('callback', False)
         command = ' '.join(self.current_selection + [str(x) for x in args])
         self.current_selection = []
@@ -251,7 +256,7 @@ class Device(object):
             return threading.Thread(target=async_function).start()
         
         self.in_progress = True
-        data = formatter(self.command(command, returns=returns))
+        data = formatter(self.command(command, returns=returns, sleep_time=sleep_time))
         self.in_progress = False
         return data
 
@@ -271,6 +276,9 @@ class Connection:
 
     def write(self, *args, **kwargs):
         logging.error("Method not implemented (%s)" % self.write)
+        
+    def close(self, *args, **kwargs):
+        logging.error("Method not implemented (%s)" % self.close)
 
 
 class SocketConnection(Connection):
@@ -303,6 +311,9 @@ class SocketConnection(Connection):
         if type(cmd) == str:
             cmd = bytes(cmd, 'utf-8')
         self.socket.send(cmd)
+        
+    def close(self):
+        self.socket.close()
 
     def __repr__(self):
         return "<Socket {host}:{port} />".format(host=self.host, port=self.port)
@@ -331,6 +342,9 @@ class SerialConnection(Connection):
         if type(cmd) == str:
             cmd = bytes(cmd, 'utf-8')
         self.connection.write(cmd)
+
+    def close(self):
+        self.connection.close()
 
     def __repr__(self):
         return "<Serial/USB {connection} />".format(connection=self.port)
