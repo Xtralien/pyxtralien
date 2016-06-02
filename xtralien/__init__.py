@@ -226,7 +226,7 @@ class Device(object):
         )
         udp_socket.bind(('0.0.0.0', random.randrange(6000, 50000)))
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        udp_socket.settimeout(0.01)
+        udp_socket.settimeout(0.05)
         udp_socket.sendto(b"xtra", ('<broadcast>', 8889))
         devices = []
         try:
