@@ -21,7 +21,6 @@ def serial_ports():
     elif sys.platform.startswith('darwin'):
         ports = glob.glob('/dev/tty.usb*')
 
-
     else:
         raise EnvironmentError('Unsupported platform')
 

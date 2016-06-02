@@ -1,16 +1,16 @@
 from setuptools import setup
 
 setup(
-    name='cloi',
-    version='0.6.0',
+    name='xtralien',
+    version='1.1.0',
     description='A connector to implement connecting to CLOI-based instruments',
     author='Xtralien',
     author_email='jack@xtralien.com',
-    url='https://github.com/xtralien/pycloi.git',
-    packages=['cloi'],
+    url='https://github.com/xtralien/pyxtralien.git',
+    packages=['xtralien'],
     extras_require={
-        'Serial': ['pyserial'],
-        'Netscan': ['netifaces']
+        'Serial': ['pyserial']
     },
+    scripts=['bin/list_xtraliens'],
     license='GPLv3'
 )

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Create a basic logger to make logging easier
@@ -8,17 +8,20 @@ from distutils.version import LooseVersion
 import time
 import re
 import threading
+import random
 
 loglevels = {
     'debug': logging.DEBUG,
-    'info' : logging.INFO,
-    'warn' : logging.WARNING,
+    'info': logging.INFO,
+    'warn': logging.WARNING,
     'error': logging.ERROR
 }
 
 logging.basicConfig()
-logger = logging.getLogger('CLOI')
-logger.setLevel(loglevels.get(os.getenv('LOG', 'warn').lower(), logging.WARNING))
+logger = logging.getLogger('Xtralien')
+logger.setLevel(
+    loglevels.get(os.getenv('LOG', 'warn').lower(), logging.WARNING)
+)
 
 try:
     import numpy
@@ -37,16 +40,6 @@ except ImportError:
     serial = None
     logger.warn("The serial module was not found, USB not supported")
 
-
-# Try and import the netifaces module, used to get the local ip addresses
-# and subnet masks to generate a list of possible addresses
-try:
-    import netifaces
-except ImportError:
-    netifaces = None
-    logger.warn("netifaces module not found, Network scan not supported")
-
-
 # Import useful BILs
 import socket
 
@@ -56,79 +49,13 @@ try:
     import serial_utils as sutils
     import network_utils as nutils
 except ImportError:
-    import cloi.serial_utils as sutils
-    import cloi.network_utils as nutils
+    import xtralien.serial_utils as sutils
+    import xtralien.network_utils as nutils
 
-registered_devices = {}
-
-class CLOI(object):
-    def __init__(self, scan_timeout=0.03):
-        self.devices = []
-        self.scan_timeout = scan_timeout
-
-    def scan(self, usb=True, network=False):
-        if usb:
-            for port in sutils.serial_ports():
-                logger.debug("Attempting to connect to %s" % port)
-                try:
-                    s = serial.Serial(port)
-                    try:
-                        s.write(b"cloi hello\n")
-                        data = s.read(576).decode('utf-8').strip().lower()
-                        if data == "hello world":
-                            d = Device()
-                            self.devices.append(d)
-
-                    except socket.timeout:
-                        pass
-                    finally:
-                        s.close()
-                except Exception:
-                    logger.warning("Could not open port %s" % port)
-
-        if network:
-            for interface in netifaces.interfaces():
-                addrs = netifaces.ifaddresses(interface)
-                try:
-                    for addr in addrs[netifaces.AF_INET]:
-                        if addr.get('broadcast', None):
-                            for ip in nutils.generate_ip_list(addr):
-                                try:
-
-                                    s = socket.socket()
-                                    s.settimeout(self.scan_timeout)
-                                    s.connect((ip, 8888))
-                                    try:
-                                        logger.debug("Testing " + ip)
-                                        s.send(b"cloi hello\n")
-                                        data = s.recv(576)
-
-                                        if data == b"Hello World\n":
-                                            logger.info("Found %s" % ip)
-                                            d = Device()
-                                            d.add_connection(SocketConnection(ip,8888))
-                                            d.discover_devices()
-                                            self.devices.append(d)
-                                    except socket.timeout:
-                                        continue
-                                    except BrokenPipeError:
-                                        continue
-                                    finally:
-                                        s.close()
-                                except socket.error:
-                                    pass
-
-                except KeyError:
-                    continue
-
-    def add_device(self, device):
-        self.devices.append(device)
-
-    def list_devices(self):
-        return self.devices
 
 def process_strip(x):
     return x.strip('\n[];')
+
 
 def process_array(x):
     data = [float(y) for y in x.strip('\n[];').split(';')]
@@ -136,18 +63,25 @@ def process_array(x):
         return numpy.array(data)
     except NameError:
         return data
-    
+
+
 def process_matrix(x):
-    data = [[float(z) for z in y.split(',')] for y in x.strip('\n[];').split(';')]
+    data = [
+        [float(z) for z in y.split(',')]
+        for y in x.strip('\n[];').split(';')
+    ]
     try:
         return numpy.array(data)
     except NameError:
         return data
-    
+
 number_regex = "(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?"
-re_matrix = re.compile('(\[({number},{number}(;?))+\])\n?'.format(number=number_regex))
+re_matrix = re.compile(
+    '(\[({number},{number}(;?))+\])\n?'.format(number=number_regex)
+)
 re_array = re.compile('(\[({number}(;?))+\])\n?'.format(number=number_regex))
 re_number = re.compile('{number}\n?'.format(number=number_regex))
+
 
 def process_auto(x=None):
     if x is None:
@@ -159,7 +93,7 @@ def process_auto(x=None):
     elif re_number.fullmatch(x):
         return float(x)
     elif '\n' in x:
-        split_string = x.strip('\n;[]').split('\n') 
+        split_string = x.strip('\n;[]').split('\n')
         if len(split_string) < 2:
             return split_string[0]
         return split_string
@@ -174,20 +108,20 @@ class Device(object):
         'strip': process_strip,
         'array': process_array,
         'matrix': process_matrix,
-        'number': lambda x: float(x), 
+        'number': lambda x: float(x),
         'none': lambda x: x,
         'auto': process_auto
     }
-    
-    def __init__(self, addr=None, port=None):
+
+    def __init__(self, addr=None, port=None, serial_timeout=0.1):
         self.connections = []
         self.current_selection = []
         self.in_progress = False
-        
+
         if port:
             self.add_connection(SocketConnection(addr, port))
         elif addr:
-            self.add_connection(SerialConnection(addr))
+            self.add_connection(SerialConnection(addr, timeout=serial_timeout))
 
     def scan(self):
         pass
@@ -199,7 +133,12 @@ class Device(object):
         if sleep_time is not None:
             time.sleep(sleep_time)
         if self.connections == []:
-            logger.error("Can't send command '{cmd} because there are no open connections'".format(cmd=command))
+            logger.error(
+                "Can't send command '{cmd}'\
+                because there are no open connections'".format(
+                    cmd=command
+                )
+            )
         for conn in self.connections:
             try:
                 conn.write(command)
@@ -209,7 +148,12 @@ class Device(object):
             except Exception:
                 conn.close()
                 continue
-        logger.error("Can't send command '{cmd} because there are no open connections'".format(cmd=command))
+        logger.error(
+            "Can't send command '{cmd}'\
+            because there are no open connections".format(
+                cmd=command
+            )
+        )
 
     def close(self):
         for conn in self.connections:
@@ -229,22 +173,26 @@ class Device(object):
             return self
 
     def __call__(self, *args, sleep_time=0.05, **kwargs):
-        returns = 'returns' in kwargs.keys() or 'format' in kwargs.keys() or kwargs.get('callback', False)
+        returns = (
+            'returns' in kwargs.keys() or
+            'format' in kwargs.keys() or
+            kwargs.get('callback', False)
+        )
         command = ' '.join(self.current_selection + [str(x) for x in args])
         self.current_selection = []
-        
+
         formatter = lambda x: x
         if 'format' in kwargs.keys() or kwargs.get('callback', None):
-            if not 'format' in kwargs.keys() or kwargs.get('format', ):
+            if 'format' not in kwargs.keys() or kwargs.get('format', ):
                 kwargs['format'] = 'auto'
             try:
                 formatter = self.formatters[kwargs.get('format', 'auto')]
             except KeyError:
                 if kwargs['format']:
-                    logger.warning('Formatter not found')               
-            
+                    logger.warning('Formatter not found')
+
         callback = kwargs.get('callback', None)
-        
+
         if callback:
             def async_function():
                 while self.in_progress:
@@ -254,20 +202,45 @@ class Device(object):
                 self.in_progress = False
                 callback(data)
             return threading.Thread(target=async_function).start()
-        
+
         self.in_progress = True
-        data = formatter(self.command(command, returns=returns, sleep_time=sleep_time))
+        data = formatter(
+            self.command(command, returns=returns, sleep_time=sleep_time)
+        )
         self.in_progress = False
         return data
 
     def __repr__(self):
         if len(self.connections):
-            return "<Device connection={connection}/>".format(connection=self.connections[0])
+            return "<Device connection={connection}/>".format(
+                connection=self.connections[0]
+            )
         else:
             return "<Device connection=None/>"
 
+    @staticmethod
+    def discover():
+        udp_socket = socket.socket(
+            family=socket.AF_INET,
+            type=socket.SOCK_DGRAM
+        )
+        udp_socket.bind(('0.0.0.0', random.randrange(6000, 50000)))
+        udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        udp_socket.settimeout(0.01)
+        udp_socket.sendto(b"xtra", ('<broadcast>', 8889))
+        devices = []
+        try:
+            while True:
+                (_, ipaddr) = udp_socket.recvfrom(4)
+                devices.append(Device(addr=ipaddr[0], port=8888))
+        except socket.timeout:
+            pass
+        finally:
+            udp_socket.close()
+        return devices
 
-class Connection:
+
+class Connection(object):
     def __init__(self):
         pass
 
@@ -276,7 +249,7 @@ class Connection:
 
     def write(self, *args, **kwargs):
         logging.error("Method not implemented (%s)" % self.write)
-        
+
     def close(self, *args, **kwargs):
         logging.error("Method not implemented (%s)" % self.close)
 
@@ -304,40 +277,43 @@ class SocketConnection(Connection):
                 retval = retval + str(self.socket.recv(576), 'utf-8')
             except socket.timeout:
                 break
-                
+
         return retval
 
     def write(self, cmd):
         if type(cmd) == str:
             cmd = bytes(cmd, 'utf-8')
         self.socket.send(cmd)
-        
+
     def close(self):
         self.socket.close()
 
     def __repr__(self):
-        return "<Socket {host}:{port} />".format(host=self.host, port=self.port)
+        return "<Socket {host}:{port} />".format(
+            host=self.host,
+            port=self.port
+        )
 
 
 class SerialConnection(Connection):
-    def __init__(self, port):
+    def __init__(self, port, timeout=0.1):
         super(SerialConnection, self).__init__()
         self.port = port
-        self.connection = serial.Serial(port, timeout=0.1)
-        
+        self.connection = serial.Serial(port, timeout=timeout)
+
     def read(self, wait=True):
         retval = ""
         while wait and self.connection.inWaiting() == 0:
             continue
-        
+
         while self.connection.inWaiting():
             try:
                 retval = retval + str(self.connection.read(436), 'utf-8')
             except Exception:
                 break
-        
+
         return retval
-              
+
     def write(self, cmd):
         if type(cmd) == str:
             cmd = bytes(cmd, 'utf-8')
@@ -348,7 +324,3 @@ class SerialConnection(Connection):
 
     def __repr__(self):
         return "<Serial/USB {connection} />".format(connection=self.port)
-
-
-def register(cls, path):
-    registered_devices[path] = cls
