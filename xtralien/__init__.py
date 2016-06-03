@@ -219,15 +219,16 @@ class Device(object):
             return "<Device connection=None/>"
 
     @staticmethod
-    def discover():
+    def discover(broadcast_address=None, timeout=0.1):
+        broadcast_address = broadcast_address or '<broadcast>'
         udp_socket = socket.socket(
             family=socket.AF_INET,
             type=socket.SOCK_DGRAM
         )
         udp_socket.bind(('0.0.0.0', random.randrange(6000, 50000)))
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        udp_socket.settimeout(0.05)
-        udp_socket.sendto(b"xtra", ('<broadcast>', 8889))
+        udp_socket.settimeout(timeout)
+        udp_socket.sendto(b"xtra", (broadcast_address, 8889))
         devices = []
         try:
             while True:
