@@ -1,9 +1,17 @@
 language: python
 python:
-  - "3.3"
-  - "3.4"
-  - "3.5.0b3"
-  - "3.5-dev"
-  - "nightly"
-install: "pip install ."
-script: "python -m cloi"
+- '3.3'
+- '3.4'
+- 3.5.0b3
+- 3.5-dev
+- nightly
+install: pip install .
+deploy:
+  provider: pypi
+  user: xtralien
+  password:
+    secure: Xr1pom0kDUmNU4wQK1Dy0qfstlVJ1xRqg3GD1I5bJ/MVXIUVjSUmOXAza3Kn9ylcuKKWJ9Ii/Yw5CyXQ9aWS5iXs/5FoCYb5sqPeiPgert5ek2CLKJPO15mwqCIiCWQRcAfVA+UxdJ2yU4/DzMuCf12bLhEu8lEUxIN613je0Q9pswqp11girv/iaLSSP5QGtE6wAi6MoSEeHcJCoAfcrOLLGwLHtlGKPvCNDV9lwmeTUV9UQpYILOWZzgi3vwMvADr75ZQNgPh5FrYFNYmB3nfNtGTAFlULmbokCQ+z6tIRWG3Rtuzurkdv4/d2DHL8EtSAgDw+os0pnH+WiZ+dafRTwIgvDZ9/bu9V5+uxSzxRt7iMO53+RdFoM2x3VvUiz6qwJXm8aXEvCnm61PbBsUwO8ipSbjiXEL5ceFkAA7M0wixIqDU8bbIWUnf9t3Isf3AeexROkPeBTUNmmUltL/8Z3oWYqOm7bG0yPBVxRA7lqpYaukDWOCn+Y9ino1KZkH8ts1sJSL0hylePzTs0c+Ko/ZgEu4AhfDsbfXyr7l6ua/N/WjEMRm2a/xleDrgHQR1eWhQF1lv/Cd90YvwdEQ5mi0UL52b0g8Zf6wkT/E6V0F1HFXZrhLLk/FJQS/AnDKLSKzKhk0C6NfAvRgGoH1qq2oCvphCzgkZSUu6ij78=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: Xtralien/pyxtralien
