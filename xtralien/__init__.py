@@ -240,6 +240,20 @@ class Device(object):
             udp_socket.close()
         return devices
 
+    @staticmethod
+    def USB(com):
+        return Device(com)
+
+    fromUSB = USB
+    openUSB = USB
+
+    @staticmethod
+    def Network(ip):
+        return Device(ip, 8888)
+
+    fromNetwork = Network
+    openNetwork = Network
+
 
 class Connection(object):
     def __init__(self):
@@ -325,3 +339,6 @@ class SerialConnection(Connection):
 
     def __repr__(self):
         return "<Serial/USB {connection} />".format(connection=self.port)
+
+
+X100 = Device
