@@ -1,7 +1,7 @@
 pycloi
 ======
 
-[![Build Status](https://travis-ci.org/Xtralien/pycloi.svg?branch=master)](https://travis-ci.org/Xtralien/pycloi)
+[![Build Status](https://travis-ci.org/Xtralien/pyxtralien.svg?branch=master)](https://travis-ci.org/Xtralien/pyxtralien)
 
 This module is a simple interface to any generic CLOI-based device.
 
