@@ -31,7 +31,7 @@ except ImportError:
 import sys
 
 if sys.version_info.major < 3:
-    logger.warn("Module not supported on Python 2.x, you have been warned")
+    logger.warn("Module not supported on Python 2.x")
 
 # Try and import the serial module (supports USB-serial communication)
 try:
@@ -140,12 +140,14 @@ class Device(object):
                 )
             )
         for conn in self.connections:
-            try:
+            if True:  # try:
                 conn.write(command)
                 if returns:
                     return conn.read(returns)
-                return
-            except Exception:
+                else:
+                    return
+            else:  # except (Exception, e):
+                # print(e)
                 conn.close()
                 continue
         logger.error(
@@ -158,12 +160,6 @@ class Device(object):
     def close(self):
         for conn in self.connections:
             conn.close()
-
-    def discover_devices(self):
-        version = self.command("cloi version", True)
-
-        if LooseVersion(version) >= LooseVersion("0.9.0"):
-            logger.info("Can match against versions")
 
     def __getattribute__(self, x):
         if '__' in x or x in object.__dir__(self):
@@ -318,12 +314,18 @@ class SerialConnection(Connection):
 
     def read(self, wait=True):
         retval = ""
-        while wait and self.connection.inWaiting() == 0:
+
+        while wait and (self.connection.inWaiting() == 0):
             continue
 
-        while self.connection.inWaiting():
+        while self.connection.inWaiting() > 0:
             try:
-                retval = retval + str(self.connection.read(436), 'utf-8')
+                retval = retval + str(
+                    self.connection.read(
+                        self.connection.inWaiting()
+                    ),
+                    'utf-8'
+                )
             except Exception:
                 break
 
@@ -333,6 +335,8 @@ class SerialConnection(Connection):
         if type(cmd) == str:
             cmd = bytes(cmd, 'utf-8')
         self.connection.write(cmd)
+        while self.connection.out_waiting > 0:
+            continue
 
     def close(self):
         self.connection.close()
