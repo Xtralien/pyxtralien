@@ -123,6 +123,14 @@ class Device(object):
         elif addr:
             self.add_connection(SerialConnection(addr, timeout=serial_timeout))
 
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        if traceback is not None:
+            print(traceback)
+        self.close()
+
     def scan(self):
         pass
 

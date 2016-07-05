@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='xtralien',
-    version='1.3.1',
+    version='1.4.0',
     description='A connector to implement connecting to CLOI-based instruments',
     author='Xtralien',
     author_email='jack@xtralien.com',
