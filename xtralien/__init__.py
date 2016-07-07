@@ -274,7 +274,7 @@ class DeviceDuplicate(object):
 
     def __call__(self, *args, **kwargs):
         self.device.current_selection = []
-        response = self.device(*(self.command_base + self.current_selection), *args, **kwargs)
+        response = self.device(' '.join(self.command_base + self.current_selection), *args, **kwargs)
         self.current_selection = []
         return response
 
