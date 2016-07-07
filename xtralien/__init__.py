@@ -177,22 +177,18 @@ class Device(object):
             return self
 
     def __call__(self, *args, sleep_time=0.05, **kwargs):
-        returns = (
-            'returns' in kwargs.keys() or
-            'format' in kwargs.keys() or
-            kwargs.get('callback', False)
-        )
+        returns = kwargs.get('response', True)
         command = ' '.join(self.current_selection + [str(x) for x in args])
         self.current_selection = []
 
-        formatter = lambda x: x
-        if 'format' in kwargs.keys() or kwargs.get('callback', None):
-            if 'format' not in kwargs.keys() or kwargs.get('format', ):
-                kwargs['format'] = 'auto'
+        if returns:
             try:
-                formatter = self.formatters[kwargs.get('format', 'auto')]
+                formatter = self.formatters.get(
+                    kwargs.get('format', 'auto'),
+                    lambda x: x
+                )
             except KeyError:
-                if kwargs['format']:
+                if kwargs.get('format', None):
                     logger.warning('Formatter not found')
 
         callback = kwargs.get('callback', None)
@@ -244,6 +240,9 @@ class Device(object):
             udp_socket.close()
         return devices
 
+    def dup(self):
+        return DeviceDuplicate(self)
+
     @staticmethod
     def USB(com):
         return Device(com)
@@ -257,6 +256,27 @@ class Device(object):
 
     fromNetwork = Network
     openNetwork = Network
+
+
+class DeviceDuplicate(object):
+    def __init__(self, device):
+        self.device = device
+        self.command_base = self.device.current_selection
+        self.device.current_selection = []
+        self.current_selection = []
+    
+    def __getattribute__(self, x):
+        if '__' in x or x in object.__dir__(self):
+            return object.__getattribute__(self, x)
+        else:
+            self.current_selection.append(x)
+            return self
+
+    def __call__(self, *args, **kwargs):
+        self.device.current_selection = []
+        response = self.device(*(self.command_base + self.current_selection), *args, **kwargs)
+        self.current_selection = []
+        return response
 
 
 class Connection(object):
