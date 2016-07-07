@@ -177,15 +177,16 @@ class Device(object):
             return self
 
     def __call__(self, *args, sleep_time=0.05, **kwargs):
-        returns = kwargs.get('response', True)
+        returns = kwargs.get('response', True) or kwargs.get('callback', False)
         command = ' '.join(self.current_selection + [str(x) for x in args])
         self.current_selection = []
 
+        formatter = lambda x: x
         if returns:
             try:
                 formatter = self.formatters.get(
                     kwargs.get('format', 'auto'),
-                    lambda x: x
+                    formatter
                 )
             except KeyError:
                 if kwargs.get('format', None):
