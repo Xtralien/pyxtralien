@@ -176,6 +176,10 @@ class Device(object):
             self.current_selection.append(x)
             return self
 
+    def __getitem__(self, x):
+        self.current_selection.append(x)
+        return self
+
     def __call__(self, *args, sleep_time=0.05, **kwargs):
         returns = kwargs.get('response', True) or kwargs.get('callback', False)
         command = ' '.join(self.current_selection + [str(x) for x in args])
@@ -272,6 +276,10 @@ class DeviceDuplicate(object):
         else:
             self.current_selection.append(x)
             return self
+    
+    def __getitem__(self, x):
+        self.current_selection.append(x)
+        return self
 
     def __call__(self, *args, **kwargs):
         self.device.current_selection = []
