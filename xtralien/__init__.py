@@ -131,8 +131,9 @@ class Device(object):
             print(traceback)
         self.close()
 
-    def scan(self):
-        pass
+    @property
+    def connection(self):
+        return self.connections[0]
 
     def add_connection(self, connection):
         self.connections.append(connection)
@@ -150,10 +151,7 @@ class Device(object):
         for conn in self.connections:
             if True:  # try:
                 conn.write(command)
-                if returns:
-                    return conn.read(returns)
-                else:
-                    return
+                return conn.read(returns)
             else:  # except (Exception, e):
                 # print(e)
                 conn.close()
