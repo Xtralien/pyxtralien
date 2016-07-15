@@ -178,9 +178,11 @@ class Device(object):
         self.current_selection.append(x)
         return self
 
-    def __call__(self, *args, sleep_time=0.05, **kwargs):
+    def __call__(self, *args, **kwargs):
+        sleep_time = kwargs.get("sleep_time", 0.05)
+        self.current_selection += args
         returns = kwargs.get('response', True) or kwargs.get('callback', False)
-        command = ' '.join(self.current_selection + [str(x) for x in args])
+        command = ' '.join([str(x) for x in self.current_selection])
         self.current_selection = []
 
         formatter = lambda x: x
