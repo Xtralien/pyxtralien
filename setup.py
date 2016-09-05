@@ -1,11 +1,14 @@
 from setuptools import setup
 
-with open('README.md') as f:
-    long_description = f.read()
+try:
+    with open('README.md') as f:
+        long_description = f.read()
+except:
+    long_description = ''
 
 setup(
     name='xtralien',
-    version='2.4.0',
+    version='2.4.1',
     description='A connector to implement connecting to CLOI-based instruments',
     long_description=long_description,
     author='Xtralien',
