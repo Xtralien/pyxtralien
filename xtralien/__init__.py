@@ -4,7 +4,6 @@
 # Create a basic logger to make logging easier
 import logging
 import os
-from distutils.version import LooseVersion
 import time
 import re
 import threading
@@ -42,15 +41,6 @@ except ImportError:
 
 # Import useful BILs
 import socket
-
-# Import utils
-# The try/except is needed to import as a module and run directly
-try:
-    import serial_utils as sutils
-    import network_utils as nutils
-except ImportError:
-    import xtralien.serial_utils as sutils
-    import xtralien.network_utils as nutils
 
 
 def process_strip(x):
@@ -125,7 +115,7 @@ class Device(object):
 
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         if traceback is not None:
             print(traceback)
@@ -138,7 +128,7 @@ class Device(object):
     def add_connection(self, connection):
         self.connections.append(connection)
 
-    def command(self, command, returns=False, sleep_time=0.05):
+    def command(self, command, returns=False, sleep_time=0.001):
         if sleep_time is not None:
             time.sleep(sleep_time)
         if self.connections == []:
@@ -179,7 +169,7 @@ class Device(object):
         return self
 
     def __call__(self, *args, **kwargs):
-        sleep_time = kwargs.get("sleep_time", 0.05)
+        sleep_time = kwargs.get("sleep_time", 0.001)
         self.current_selection += args
         returns = kwargs.get('response', True) or kwargs.get('callback', False)
         command = ' '.join([str(x) for x in self.current_selection])
@@ -249,15 +239,15 @@ class Device(object):
         return DeviceDuplicate(self)
 
     @staticmethod
-    def USB(com):
-        return Device(com)
+    def USB(com, *args, **kwargs):
+        return Device(com, *args, **kwargs)
 
     fromUSB = USB
     openUSB = USB
 
     @staticmethod
-    def Network(ip):
-        return Device(ip, 8888)
+    def Network(ip, *args, **kwargs):
+        return Device(ip, 8888, *args, **kwargs)
 
     fromNetwork = Network
     openNetwork = Network
@@ -269,21 +259,25 @@ class DeviceDuplicate(object):
         self.command_base = self.device.current_selection
         self.device.current_selection = []
         self.current_selection = []
-    
+
     def __getattribute__(self, x):
         if '__' in x or x in object.__dir__(self):
             return object.__getattribute__(self, x)
         else:
             self.current_selection.append(x)
             return self
-    
+
     def __getitem__(self, x):
         self.current_selection.append(x)
         return self
 
     def __call__(self, *args, **kwargs):
         self.device.current_selection = []
-        response = self.device(' '.join(self.command_base + self.current_selection), *args, **kwargs)
+        response = self.device(
+            ' '.join(self.command_base + self.current_selection),
+            *args,
+            **kwargs
+        )
         self.current_selection = []
         return response
 
