@@ -1,9 +1,13 @@
 from setuptools import setup
 
+with open('README.md') as f:
+    long_description = f.read()
+
 setup(
     name='xtralien',
-    version='2.3.0',
+    version='2.4.0',
     description='A connector to implement connecting to CLOI-based instruments',
+    long_description=long_description,
     author='Xtralien',
     author_email='jack@xtralien.com',
     url='https://github.com/xtralien/pyxtralien.git',
