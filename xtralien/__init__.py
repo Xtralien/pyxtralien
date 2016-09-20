@@ -9,6 +9,8 @@ import re
 import threading
 import random
 
+from xtralien.serial_utils import serial_ports
+
 loglevels = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
@@ -214,7 +216,7 @@ class Device(object):
             return "<Device connection=None/>"
 
     @staticmethod
-    def discover(broadcast_address=None, timeout=0.1):
+    def discover(broadcast_address=None, timeout=0.1, *args, **kwargs):
         broadcast_address = broadcast_address or '<broadcast>'
         udp_socket = socket.socket(
             family=socket.AF_INET,
@@ -239,11 +241,27 @@ class Device(object):
         return DeviceDuplicate(self)
 
     @staticmethod
-    def USB(com, *args, **kwargs):
+    def USB(com=None, *args, **kwargs):
+        if com is None:
+            while True:
+                try:
+                    com = serial_ports()[0]
+                except IndexError:
+                    continue
+                else:
+                    break
+
         return Device(com, *args, **kwargs)
 
     fromUSB = USB
     openUSB = USB
+
+    @staticmethod
+    def COM(com, *args, **kwargs):
+        return Device.USB("COM{}".format(com), *args, **kwargs)
+
+    fromCOM = COM
+    openCOM = COM
 
     @staticmethod
     def Network(ip, *args, **kwargs):
@@ -251,6 +269,18 @@ class Device(object):
 
     fromNetwork = Network
     openNetwork = Network
+
+    @staticmethod
+    def first(*args, **kwargs):
+        while True:
+            try:
+                try:
+                    com = serial_ports()[0]
+                    return Device.USB(com, *args, **kwargs)
+                except IndexError:
+                    return Device.discover(*args, **kwargs)[0]
+            except IndexError:
+                continue
 
 
 class DeviceDuplicate(object):
