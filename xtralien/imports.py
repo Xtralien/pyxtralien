@@ -12,7 +12,6 @@ from xtralien import X100, Device  # noqa: F401
 from xtralien.serial_utils import serial_ports  # noqa: F401
 
 # Time
-import time  # noqa: F401
 from time import *  # noqa: F401
 
 # Scipy
@@ -82,3 +81,10 @@ def load_csv(fname, *args, **kwargs):
                         r.append(d)
                     arr.append(r)
         return arr
+
+# Delete some constants
+del altzone  # noqa: F821
+del daylight  # noqa: F821
+del euler_gamma  # noqa: F821
+del timezone  # noqa: F821
+del tzname  # noqa: F821
