@@ -10,6 +10,7 @@ import threading
 import random
 
 from xtralien.serial_utils import serial_ports
+from xtralien.keithley import K2600
 
 loglevels = {
     'debug': logging.DEBUG,
