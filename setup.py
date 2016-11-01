@@ -8,7 +8,7 @@ except:
 
 setup(
     name='xtralien',
-    version='2.6.2',
+    version='2.7.0',
     description='A connector to implement connecting to CLOI-based instruments',
     long_description=long_description,
     author='Xtralien',
@@ -17,6 +17,7 @@ setup(
     packages=['xtralien'],
     extras_require={
         'Serial': ['pyserial'],
+        'keithley': ['pyVISA'],
         'prompt': ['pyreadline']
     },
     scripts=['bin/list_xtraliens'],

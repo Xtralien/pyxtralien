@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Mixins are used to ensure capabilities are present and implemented
+"""
 
 
 class Mixin(object):

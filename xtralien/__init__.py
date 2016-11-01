@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+"""
+Xtralien
+"""
 # Create a basic logger to make logging easier
 import logging
 import os
@@ -10,9 +12,8 @@ import threading
 import random
 
 from xtralien.serial_utils import serial_ports
-from xtralien.keithley import K2600
 
-loglevels = {
+log_levels = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
     'warn': logging.WARNING,
@@ -22,7 +23,7 @@ loglevels = {
 logging.basicConfig()
 logger = logging.getLogger('Xtralien')
 logger.setLevel(
-    loglevels.get(os.getenv('LOG', 'warn').lower(), logging.WARNING)
+    log_levels.get(os.getenv('LOG', 'warn').lower(), logging.WARNING)
 )
 
 try:
@@ -68,12 +69,12 @@ def process_matrix(x):
     except NameError:
         return data
 
-number_regex = "(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?"
+number_regex = r"(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?"
 re_matrix = re.compile(
-    '(\[({number},{number}(;?))+\])\n?'.format(number=number_regex)
+    r'(\[({number},{number}(;?))+\])\n?'.format(number=number_regex)
 )
-re_array = re.compile('(\[({number}(;?))+\])\n?'.format(number=number_regex))
-re_number = re.compile('{number}\n?'.format(number=number_regex))
+re_array = re.compile(r'(\[({number}(;?))+\])\n?'.format(number=number_regex))
+re_number = re.compile(r'{number}\n?'.format(number=number_regex))
 
 
 def process_auto(x=None):
@@ -229,8 +230,13 @@ class Device(object):
         udp_socket.sendto(b"xtra", (broadcast_address, 8889))
         devices = []
         try:
+            start_time = time.time()
             while True:
+                if time.time() > (start_time + timeout):
+                    break
                 (_, ipaddr) = udp_socket.recvfrom(4)
+                if ipaddr:
+                    start_time = time.time()
                 devices.append(Device(addr=ipaddr[0], port=8888))
         except socket.timeout:
             pass
