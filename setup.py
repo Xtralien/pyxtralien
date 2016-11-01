@@ -8,7 +8,7 @@ except:
 
 setup(
     name='xtralien',
-    version='2.7.0',
+    version='2.7.1',
     description='A connector to implement connecting to CLOI-based instruments',
     long_description=long_description,
     author='Xtralien',
