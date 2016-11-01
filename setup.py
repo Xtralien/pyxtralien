@@ -20,6 +20,5 @@ setup(
         'keithley': ['pyVISA'],
         'prompt': ['pyreadline']
     },
-    scripts=['bin/list_xtraliens'],
     license='GPLv3'
 )
