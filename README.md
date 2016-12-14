@@ -1,4 +1,4 @@
-pycloi
+pyxtralien
 ======
 
 [![Build Status](https://travis-ci.org/Xtralien/pyxtralien.svg?branch=master)](https://travis-ci.org/Xtralien/pyxtralien)
