@@ -30,6 +30,9 @@ from matplotlib.pyplot import *  # noqa: F401
 # 3D plotting
 from mpl_toolkits.mplot3d import axes3d, Axes3D  # noqa: F401
 
+# Warnings
+from warnings import *
+
 
 def print_header(*args):
     """
