@@ -71,28 +71,6 @@ def array_to_csv(arr, fname, *args, **kwargs):
         savetxt(fname, arr, *args, delimiter=",", fmt="%s", **kwargs)
 
 
-def load_csv(fname, array=False, headers=None, *args, **kwargs):
-    with open(fname, 'r') as f:
-        # Check if the file contains headers
-        if headers is None:
-            
-        
-
-        reader = csv.DictReader(f, *args, **kwargs)
-        _dict = OrderedDict()
-
-        
-    columns = defaultdict(list) # each value in each column is appended to a list
-    filenames.append(filename)
-    print(filename)
-    
-    with open(filename) as f:
-        reader = csv.DictReader(f) # read rows into a dictionary format
-        for row in reader: # read a row as {column1: value1, column2: value2,...}
-            for (k,v) in row.items(): # go over each column name and value 
-                columns[k].append(v) # append the value into the appropriate list
-                                     # based on column name k 
-
 def load_csv(fname, skip_headers=False, *args, **kwargs):
     """
     Load a csv file from a given filename.
