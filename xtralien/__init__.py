@@ -11,6 +11,8 @@ import re
 import threading
 import random
 import datetime
+import sys
+import socket
 
 from xtralien.serial_utils import serial_ports
 
@@ -32,7 +34,6 @@ try:
 except ImportError:
     logger.warn("Numpy not found, narray and nmatrix will fail")
 
-import sys
 
 if sys.version_info.major < 3:
     logger.warn("Module not supported on Python 2.x")
@@ -43,9 +44,6 @@ try:
 except ImportError:
     serial = None
     logger.warn("The serial module was not found, USB not supported")
-
-# Import useful BILs
-import socket
 
 
 def process_strip(x):
@@ -69,6 +67,7 @@ def process_matrix(x):
         return numpy.array(data)
     except NameError:
         return data
+
 
 number_regex = r"(\-|\+)?[0-9]+(\.[0-9]+)?(e-?[0-9]+(\.[0-9]+)?)?"
 re_matrix = re.compile(
@@ -179,13 +178,14 @@ class Device(object):
         }
 
     @serial.setter
-    def setSerial(self, board, week=None, year=None, model=None, product=None):
+    def setSerial(self, serial_dict):
         # Set defaults
         dt = datetime.datetime.now()
-        week = week if week is not None else int(dt.strftime("%W"))
-        year = year if year is not None else int(dt.strftime("%Y"))
-        model = model if model is not None else 0
-        product = product if product is not None else 0
+        week = serial_dict.get("week", int(dt.strftime("%W")))
+        year = serial_dict.get("year", int(dt.strftime("%Y")))
+        model = serial_dict.get('model', 0)
+        product = serial_dict.get('product', 0)
+        board = serial_dict.get('board_number', 0)
         # Create Serial
         _serial = 0x000000000000
         _serial |= board & 0xffff
@@ -219,7 +219,9 @@ class Device(object):
         command = ' '.join([str(x) for x in self.current_selection])
         self.current_selection = []
 
-        formatter = lambda x: x
+        def formatter(x):
+            return x
+
         if returns:
             try:
                 formatter = self.formatters.get(
