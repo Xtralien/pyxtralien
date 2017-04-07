@@ -178,11 +178,11 @@ class Device(object):
         }
 
     @serial.setter
-    def setSerial(self, serial_dict):
+    def serial(self, serial_dict):
         # Set defaults
         dt = datetime.datetime.now()
         week = serial_dict.get("week", int(dt.strftime("%W")))
-        year = serial_dict.get("year", int(dt.strftime("%Y")))
+        year = serial_dict.get("year", dt.year - 2000)
         model = serial_dict.get('model', 0)
         product = serial_dict.get('product', 0)
         board = serial_dict.get('board_number', 0)
