@@ -10,6 +10,7 @@ import time
 import re
 import threading
 import random
+import datetime
 
 from xtralien.serial_utils import serial_ports
 
@@ -160,6 +161,45 @@ class Device(object):
     def close(self):
         for conn in self.connections:
             conn.close()
+
+    @property
+    def serial(self):
+        _serial = int('0x' + self.cmd("serial", format=None), 16)
+        return {
+            # 16 bits
+            "board_number": (_serial & 0x00000000FFFF),
+            # 6 bits
+            "week": (_serial & 0x0000003F0000) >> 16,
+            # 8 bits
+            "year": (_serial & 0x00003FC00000) >> 22,
+            # 8 bits
+            "model": (_serial & 0x003FC0000000) >> 30,
+            # 10 bits
+            "product": (_serial & 0xFFC000000000) >> 38
+        }
+
+    @serial.setter
+    def setSerial(self, board, week=None, year=None, model=None, product=None):
+        # Set defaults
+        dt = datetime.datetime.now()
+        week = week if week is not None else int(dt.strftime("%W"))
+        year = year if year is not None else int(dt.strftime("%Y"))
+        model = model if model is not None else 0
+        product = product if product is not None else 0
+        # Create Serial
+        _serial = 0x000000000000
+        _serial |= board & 0xffff
+        _serial |= (week & 0x3f) << 16
+        _serial |= (year & 0xff) << 22
+        _serial |= (model & 0xff) << 30
+        _serial |= (product & 0x3ff) << 38
+
+        for i in range(6):
+            self.eeprom.set(16383-i, (_serial & 0xff), response=0)
+            _serial >>= 8
+            time.sleep(0.1)
+
+        return self.serial
 
     def __getattribute__(self, x):
         if '__' in x or x in object.__dir__(self):
