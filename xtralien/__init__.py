@@ -164,7 +164,7 @@ class Device(object):
 
     @property
     def serial(self):
-        _serial = int('0x' + self.cmd("serial", format=None), 16)
+        _serial = int('0x' + self("serial", format=None), 16)
         return {
             # 16 bits
             "board_number": (_serial & 0x00000000FFFF),
