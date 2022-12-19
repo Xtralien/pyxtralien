@@ -1,10 +1,13 @@
 language: python
 python:
-- '3.3'
-- '3.4'
-- 3.5.0b3
-- 3.5-dev
-- nightly
+- '3.5'
+- '3.6'
+- '3.7'
+- '3.8'
+- '3.9'
+- '3.10'
+- '3.11'
+- 'nightly'
 install: pip install .
 after_success: pip install clint
 script: echo 'Done'
