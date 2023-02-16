@@ -1,25 +1,51 @@
-pyxtralien
-======
+# pyxtralien
 
-[![Build Status](https://travis-ci.org/Xtralien/pyxtralien.svg?branch=master)](https://travis-ci.org/Xtralien/pyxtralien)
+This module is a simple interface to Ossila's Source Measure Unit.
 
-This module is a simple interface to any generic CLOI-based device.
+## Description
 
+Xtralien is an open-source project from the Engineers at [Ossila](https://ossila.com)
+to allow control of their equipment easily and Pythonically.
+It is based on CLOI, the Command Language for Ossila Instruments.
 
-Xtralien
---------
+## Installation
 
-CLOI is an open-sourced project from the Engineers at [Xtralien](http://xtralien.com)
-to help support easy scientific research, but it was designed to be simple, and work in
-quite a lot of scenarios.
+Using `pip`:
 
+```shell
+pip install xtralien
+```
 
-Design Goals
-------------
+If you want to control the equipment using USB you will also need to install [pySerial](https://pypi.org/project/pyserial/).
 
-You can read more about CLOI on the [Xtralien website](http://xtralien.com) but essentially it was designed with the
-goal of being easy to extend.
-To this end, from a technical standpoint it is easy to add more functionality to CLOI, which is as simple as writing
-a function and attaching the function to CLOI.
-From an end-user standpoint it is also easy to use, with the main interface being text, as if you were typing commands
-into a terminal.
+## Usage
+
+Below is a simple example of taking a measurement using the library.
+
+```python
+import time
+
+from xtralien import Device
+
+com_port = 'com5'
+channel = 'smu1'
+
+# Connect to the Source Measure Unit using USB
+with Device(com_port) as SMU:
+    # Turn on SMU 1
+    SMU[channel].set.enabled(1, response=0)
+
+    # Set voltage, measure voltage and current
+    voltage, current = SMU[channel].oneshot(set_v)[0]
+
+    # Print measured voltage and current
+    print(f'V: {voltage} V; I: {current} A')
+
+    # Reset output voltage and turn off SMU 1
+    SMU[channel].set.voltage(0, response=0)
+    time.sleep(0.1)
+    SMU[channel].set.enabled(False, response=0)
+
+```
+
+For more documentation examples see our [programming guide](https://www.ossila.com/pages/source-measure-unit-python-programming-guide).

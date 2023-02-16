@@ -1,0 +1,20 @@
+{
+    "version": "0.2",
+    "ignorePaths": [],
+    "dictionaryDefinitions": [],
+    "dictionaries": [],
+    "words": [
+        "CLOI",
+        "oneshot",
+        "Ossila",
+        "pypi",
+        "pytest",
+        "Pythonically",
+        "pyxtralien",
+        "testpypi",
+        "venv",
+        "Xtralien"
+    ],
+    "ignoreWords": [],
+    "import": []
+}
