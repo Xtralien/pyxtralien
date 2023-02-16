@@ -1,6 +1,6 @@
-import sys
 import glob
 import serial
+import sys
 
 
 def serial_ports():

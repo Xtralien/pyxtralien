@@ -4,15 +4,15 @@
 Xtralien
 """
 # Create a basic logger to make logging easier
+import datetime
 import logging
 import os
-import time
-import re
-import threading
 import random
-import datetime
-import sys
+import re
 import socket
+import sys
+import threading
+import time
 
 from xtralien.serial_utils import serial_ports
 
@@ -32,7 +32,7 @@ logger.setLevel(
 try:
     import numpy
 except ImportError:
-    logger.warn("Numpy not found, narray and nmatrix will fail")
+    logger.warn("Numpy not found, array and matrix will fail")
 
 
 if sys.version_info.major < 3:
@@ -276,10 +276,10 @@ class Device(object):
             while True:
                 if time.time() > (start_time + timeout):
                     break
-                (_, ipaddr) = udp_socket.recvfrom(4)
-                if ipaddr:
+                (_, ip_addr) = udp_socket.recvfrom(4)
+                if ip_addr:
                     start_time = time.time()
-                devices.append(Device(addr=ipaddr[0], port=8888))
+                devices.append(Device(addr=ip_addr[0], port=8888))
         except socket.timeout:
             pass
         finally:

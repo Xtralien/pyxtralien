@@ -1,7 +1,9 @@
 import visa
 
+
 class InvalidChannelError(ValueError):
     pass
+
 
 class K2600(object):
     """ Keithley 2600 instrument class. """

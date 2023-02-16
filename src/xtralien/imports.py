@@ -7,11 +7,11 @@ Most of these are common functions, however we found that we were using
 them a lot so we included them here.
 """
 
-import os  # noqa: F401
-import sys  # noqa: F401
-from glob import glob  # noqa: F401
-import re  # noqa: F401
 import csv
+from glob import glob  # noqa: F401
+import os  # noqa: F401
+import re  # noqa: F401
+import sys  # noqa: F401
 
 import base64  # noqa: F401
 import base64 as b64  # noqa: F401

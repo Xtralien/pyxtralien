@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 try:
     with open('README.md') as f:
@@ -9,12 +9,15 @@ except:
 setup(
     name='xtralien',
     version='2.10.0',
-    description='A connector to implement connecting to CLOI-based instruments',
+    description='A library for controlling Ossila\'s Source Measure Unit',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Ossila Ltd.',
     author_email='info@ossila.com',
     url='https://github.com/xtralien/pyxtralien.git',
-    packages=['xtralien'],
+    packages=find_packages(where='src', exclude=['additional']),
+    package_dir={'': 'src'},
+    python_requires='>=3.5',
     extras_require={
         'Serial': ['pyserial'],
         'keithley': ['pyVISA'],
