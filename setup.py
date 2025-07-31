@@ -22,7 +22,7 @@ setup(
         'numpy': ['numpy'],
         'Serial': ['pyserial'],
         'keithley': ['pyVISA'],
-        'prompt': ['pyreadline']
+        'prompt': ['pyreadline', 'scipy', 'matplotlib', 'ipython']
     },
     license='MIT'
 )

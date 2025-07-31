@@ -14,8 +14,6 @@ import sys
 import threading
 import time
 
-from xtralien.serial_utils import serial_ports
-
 log_levels = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
@@ -40,8 +38,10 @@ if sys.version_info.major < 3:
 # Try and import the serial module (supports USB-serial communication)
 try:
     import serial
+    from xtralien.serial_utils import serial_ports
 except ImportError:
     serial = None
+    serial_ports = lambda: ()
     logger.warning("The serial module was not found, USB not supported")
 
 

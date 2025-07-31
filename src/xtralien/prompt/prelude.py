@@ -26,7 +26,11 @@ from warnings import *  # noqa: F403
 # Xtralien
 import xtralien  # noqa: F401
 from xtralien import X100, Device  # noqa: F401
-from xtralien.serial_utils import serial_ports  # noqa: F401
+
+try:
+    from xtralien.serial_utils import serial_ports  # noqa: F401
+except ImportError:
+    print("The serial module was not found, USB not supported")
 
 # Scipy
 import scipy  # noqa: F401

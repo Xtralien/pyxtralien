@@ -1,4 +1,4 @@
-from xtralien.imports import *  # noqa: F403
+from xtralien.prompt.prelude import *  # noqa: F403
 
 
 def prompt(vars=None, message=""):
