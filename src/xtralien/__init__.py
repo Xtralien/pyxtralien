@@ -95,8 +95,6 @@ def process_auto(x=None):
 
 
 class Device(object):
-    connections = []
-    current_selection = []
     formatters = {
         'strip': process_strip,
         'array': process_array,
@@ -114,8 +112,7 @@ class Device(object):
         write_timeout: float = 1,
     ) -> None:
         self.connections = []
-        self.current_selection = []
-        self.in_progress = False
+        self._in_progress_lock = threading.Lock()
 
         if port:
             self.add_connection(SocketConnection(addr, port))
@@ -138,27 +135,28 @@ class Device(object):
     def connection(self):
         return self.connections[0]
 
+    @property
+    def in_progress(self) -> bool:
+        return self._in_progress_lock.locked()
+
     def add_connection(self, connection):
         self.connections.append(connection)
 
     def command(self, command, returns=False, sleep_time=0.001):
         if sleep_time is not None:
             time.sleep(sleep_time)
-        if self.connections == []:
-            logger.error(
-                "Can't send command '{cmd}'\
-                because there are no open connections'".format(
-                    cmd=command
-                )
-            )
-        for conn in self.connections:
-            if True:  # try:
+
+        conn = None
+        try:
+            for conn in self.connections:
                 conn.write(command)
                 return conn.read(returns)
-            else:  # except (Exception, e):
-                # print(e)
+        except ConnectionError:
+            if conn is not None:
                 conn.close()
-                continue
+                self.connections.remove(conn)
+            raise
+
         logger.error(
             "Can't send command '{cmd}'\
             because there are no open connections".format(
@@ -214,51 +212,42 @@ class Device(object):
         if '__' in x or x in object.__dir__(self):
             return object.__getattribute__(self, x)
         else:
-            self.current_selection.append(x)
-            return self
+            return CommandBuilder(self, [x])
 
     def __getitem__(self, x):
-        self.current_selection.append(x)
-        return self
+        return CommandBuilder(self, [x])
 
-    def __call__(self, *args, **kwargs):
-        sleep_time = kwargs.get('sleep_time', 0.001)
-        self.current_selection += args
-        returns = kwargs.get('response', True) or kwargs.get('callback', False)
-        command = ' '.join([str(x) for x in self.current_selection])
-        self.current_selection = []
+    @staticmethod
+    def _default_formatter(x):
+        return x
 
-        def formatter(x):
-            return x
+    def __call__(
+            self, *args,
+            sleep_time = 0.001,
+            format = 'auto',
+            response = True,
+            callback = None,
+    ):
+        returns = bool(response or callback)
+        command = ' '.join(str(x) for x in args)
 
         if returns:
-            try:
-                formatter = self.formatters.get(
-                    kwargs.get('format', 'auto'),
-                    formatter
-                )
-            except KeyError:
-                if kwargs.get('format', None):
-                    logger.warning('Formatter not found')
+            formatter = self.formatters.get(format, self._default_formatter)
+        else:
+            formatter = self._default_formatter
 
-        callback = kwargs.get('callback', None)
-
-        if callback:
+        if callback is not None:
             def async_function():
-                while self.in_progress:
-                    continue
-                self.in_progress = True
-                data = formatter(self.command(command, returns=True))
-                self.in_progress = False
+                with self._in_progress_lock:
+                    data = formatter(self.command(command, returns=True))
                 callback(data)
-            return threading.Thread(target=async_function).start()
+            threading.Thread(target=async_function).start()
+            return None
 
-        self.in_progress = True
-        data = formatter(
-            self.command(command, returns=returns, sleep_time=sleep_time)
-        )
-        self.in_progress = False
-        return data
+        with self._in_progress_lock:
+            return formatter(
+                self.command(command, returns=returns, sleep_time=sleep_time)
+            )
 
     def __repr__(self):
         if len(self.connections):
@@ -294,9 +283,6 @@ class Device(object):
         finally:
             udp_socket.close()
         return devices
-
-    def dup(self):
-        return DeviceDuplicate(self)
 
     @staticmethod
     def USB(com=None, *args, **kwargs):
@@ -341,33 +327,27 @@ class Device(object):
                 continue
 
 
-class DeviceDuplicate(object):
-    def __init__(self, device):
+class CommandBuilder:
+    def __init__(self, device, command = None):
         self.device = device
-        self.command_base = self.device.current_selection
-        self.device.current_selection = []
-        self.current_selection = []
+        self.command = command or []
 
-    def __getattribute__(self, x):
-        if '__' in x or x in object.__dir__(self):
-            return object.__getattribute__(self, x)
+    def __getattribute__(self, name):
+        if '__' in name or name in object.__dir__(self):
+            return object.__getattribute__(self, name)
         else:
-            self.current_selection.append(x)
+            self.command.append(name)
             return self
 
-    def __getitem__(self, x):
-        self.current_selection.append(x)
+    def __getitem__(self, value):
+        self.command.append(value)
         return self
 
     def __call__(self, *args, **kwargs):
-        self.device.current_selection = []
-        response = self.device(
-            ' '.join(self.command_base + self.current_selection),
-            *args,
-            **kwargs
-        )
-        self.current_selection = []
-        return response
+        return self.device(*self.command, *args, **kwargs)
+
+    def dup(self):
+        return CommandBuilder(self.device, list(self.command))
 
 
 class Connection(object):
